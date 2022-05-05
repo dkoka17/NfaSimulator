@@ -14,6 +14,8 @@ class Node:
     steps = []
     char: str
     isRecursive = False
+    isSubStarter = False
+    accept = False
 
     def __init__(self, ind, accept, steps):
         self.ind = ind
@@ -44,6 +46,8 @@ class Nfa:
     newBranches = set()
     newNfa = set()
     lastOperation: str = ""
+    acceptStates = set()
+    starterInd = 0
 
     def __init__(self, curInd, regex, openedCures, nodeList):
         self.curInd = curInd
@@ -52,44 +56,53 @@ class Nfa:
         self.nodeList = nodeList
         self.activeBranches = set()
         self.newBranches = set()
-        self.newNfa = set()
+        self.newNfas = set()
+        self.acceptStates = set()
 
     def convert(self):
         for i in range(self.curInd, len(self.regex)):
             curChar = self.regex[i]
-            print("start curINd: " + self.curInd.__str__() + " curChar: " + curChar)
+            if i >= self.curInd:
+                self.curInd = i
 
-            if curChar == "." or curChar == "|":
-                print(curChar)
-                self.lastOperation = curChar
-            elif curChar == "*":
-                print("*")
-            elif curChar == ")":
-                self.lastOperation = curChar
-                self.openedCures -= 1
-                if self.openedCures == 0:
-                    self.joinBranches()
-                    return
-            elif curChar == "(":
-                print("(")
-                self.lastOperation = curChar
-                self.openedCures += 1
-                newNfa = Nfa(curInd=i + 1, regex=self.regex, openedCures=1, nodeList=self.nodeList)
-                newNfa.convert()
-                self.curInd = newNfa.curInd
-                self.newNfa.add(newNfa)
+                print("start curINd: " + self.curInd.__str__() + " curChar: " + curChar)
 
-            else:
-                nextChar = ""
-                if i+1 != len(self.regex):
-                    nextChar = self.regex[i+1]
-                newNode = Node(ind=len(self.nodeList), accept=False, char=curChar)
-                if nextChar == "*":
-                    newNode.addRecursion()
-                self.nodeList.append(newNode)
-                self.addNewNode(self.lastOperation, newNode)
+                if curChar == "." or curChar == "|":
+                    print(curChar)
+                    self.lastOperation = curChar
+                elif curChar == "*":
+                    print("*")
+                elif curChar == ")":
+                    self.openedCures -= 1
+                    if self.openedCures == 0:
+                        self.joinBranches()
+                        self.setAccepters()
+                        return
+                elif curChar == "(":
+                    print("(")
+                    self.openedCures += 1
+                    nd = Node(ind=len(self.nodeList), accept=False, char="")
+                    nd.isSubStarter = True
+                    self.nodeList.append(nd)
+                    newNfa = Nfa(curInd=i + 1, regex=self.regex, openedCures=1, nodeList=self.nodeList)
+                    newNfa.activeBranches.add(nd.ind)
+                    newNfa.starterInd = nd.ind
+                    newNfa.convert()
+                    self.curInd = newNfa.curInd
+                    self.addNewNfa(self.lastOperation, newNfa)
+
+                else:
+                    nextChar = ""
+                    if i+1 != len(self.regex):
+                        nextChar = self.regex[i+1]
+                    newNode = Node(ind=len(self.nodeList), accept=False, char=curChar)
+                    if nextChar == "*":
+                        newNode.addRecursion()
+                    self.nodeList.append(newNode)
+                    self.addNewNode(self.lastOperation, newNode)
 
         self.joinBranches()
+        self.setAccepters()
 
     def addNewNode(self, lastOperation, newNode):
         if lastOperation == "." or lastOperation == "(" or lastOperation == ")":
@@ -100,16 +113,57 @@ class Nfa:
         elif lastOperation == "|":
             self.newBranches.add(newNode.ind)
 
+    def addNewNfa(self, lastOperation, newNode):
+        if lastOperation == "." or lastOperation == "(" or lastOperation == ")":
+            self.joinBranches()
+            self.newNfas.add(newNode)
+        elif lastOperation == "":
+            self.newNfas.add(newNode)
+        elif lastOperation == "|":
+            self.newNfas.add(newNode)
+
     def joinBranches(self):
         for ind in self.activeBranches:
             for i in self.newBranches:
                 self.nodeList[ind].addStep(self.nodeList[i].char, self.nodeList[i].ind)
+            for i in self.newNfas:
+                self.nodeList[ind].addStep("$",i.starterInd)
 
         self.activeBranches.clear()
         self.activeBranches.update(self.newBranches)
         self.newBranches.clear()
 
+        for nf in self.newNfas:
+            for k in i.acceptStates:
+                self.activeBranches.add(k)
+        self.newNfas.clear()
+
+    def setAccepters(self):
+       for st in self.activeBranches:
+           self.acceptStates.add(st)
+
     def printNfa(self):
+        acc = ""
+        for ind in self.acceptStates:
+            acc = acc + ind.__str__()  + " "
+        print(acc)
+        nd: Node
+        for nd in self.nodeList:
+            pr = nd.ind.__str__()
+
+            for st in nd.steps:
+                if self.nodeList[st.to_node].isRecursive:
+                    childs = self.getAllChildSteps(st.to_node)
+                    pr += childs
+                else:
+                    pr = pr + " " + st.char.__str__() + " " + st.to_node.__str__()
+            print(pr)
+
+    def printNfaFull(self):
+        acc = ""
+        for ind in self.acceptStates:
+            acc = acc + ind.__str__()  + " "
+        print(acc)
         nd: Node
         for nd in self.nodeList:
             pr = nd.ind.__str__()
@@ -147,7 +201,7 @@ def addPlus(regex):
                 else:
                     ret = ret + v + "."
         elif i + 1 != len(regex):
-            if regex[i + 1] == "|" or regex[i + 1] == "(" or regex[i + 1] == ")" or regex[i + 1] == "*":
+            if regex[i + 1] == "|" or regex[i + 1] == ")" or regex[i + 1] == "*":
                 ret += v
             else:
                 ret = ret + v + "."
@@ -159,7 +213,7 @@ def addPlus(regex):
 
 def main():
     # regex = input()
-    regex = "a*bd|c"
+    regex = "a()"
     regex = addPlus(regex)
     nodeList = []
     nodeList.append(Node(ind=0, accept=False, char=""))
