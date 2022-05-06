@@ -1,3 +1,6 @@
+import sys
+
+
 class Step:
     char: str
     to_node: int
@@ -201,9 +204,9 @@ class Nfa:
             acc = acc + ind.__str__() + " "
         header = ""
         header += len(self.nodeList).__str__() +" " + len(self.acceptStates).__str__() + " " + stepCounter.__str__()
-        print(header)
-        print(acc)
-        print(pr)
+        sys.stdout.write((header) +"\n")
+        sys.stdout.write((acc) +"\n")
+        sys.stdout.write((pr))
 
     def antiRecursion(self):
         nd: Node
@@ -283,8 +286,7 @@ def addPlus(regex):
 
 
 def main():
-    # regex = input()
-    regex = "(ab*c(0|1)*)*"
+    regex = sys.stdin.readline().strip()
     regex = addPlus(regex)
     nodeList = []
     nodeList.append(Node(ind=0, accept=False, char=""))
