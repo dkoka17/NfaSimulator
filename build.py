@@ -226,6 +226,8 @@ class Nfa:
                     self.acceptStates.add(nd.ind)
                     self.nodeList[nd.ind].recursed = True
                     self.antiRecursion()
+                elif self.nodeList[st.to_node].isRecursive  and self.acceptStates.__contains__(st.to_node):
+                    self.acceptStates.add(nd.ind)
 
 
     def updateSubRecursion(self,index,starterInd):
