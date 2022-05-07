@@ -29,6 +29,7 @@ class Node:
     nfa = None
     emptyNfa = False
     recursed = False
+    recursedForisRecursive = False
 
     def __init__(self, ind, accept, steps):
         self.ind = ind
@@ -199,6 +200,7 @@ class Nfa:
                 pr = pr + " " + st.char.__str__() + " " + st.to_node.__str__()
             pr += "\n"
         self.antiRecursion()
+        self.antiRecursionForRecusive()
 
         for ind in self.acceptStates:
             acc = acc + ind.__str__() + " "
@@ -208,6 +210,13 @@ class Nfa:
         sys.stdout.write((acc) +"\n")
         sys.stdout.write((pr))
 
+    def antiRecursionForRecusive(self):
+        for nd in self.nodeList:
+            for st in nd.steps:
+                if self.nodeList[st.to_node].isRecursive and self.acceptStates.__contains__(st.to_node) and (not self.nodeList[st.to_node].recursedForisRecursive):
+                    self.acceptStates.add(nd.ind)
+                    self.nodeList[st.to_node].recursedForisRecursive = True
+                    self.antiRecursionForRecusive()
     def antiRecursion(self):
         nd: Node
         for nd in self.nodeList:
@@ -226,8 +235,6 @@ class Nfa:
                     self.acceptStates.add(nd.ind)
                     self.nodeList[nd.ind].recursed = True
                     self.antiRecursion()
-                elif self.nodeList[st.to_node].isRecursive  and self.acceptStates.__contains__(st.to_node):
-                    self.acceptStates.add(nd.ind)
 
 
     def updateSubRecursion(self,index,starterInd):
