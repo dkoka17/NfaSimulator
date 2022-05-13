@@ -255,17 +255,8 @@ class Nfa:
                     self.acceptStates.add(nd.ind)
                     self.nodeList[st.to_node].recursedForisRecursive = True
                     self.antiRecursionForRecusive()
-                elif self.nodeList[st.to_node].isRecursive2 and self.acceptStates.__contains__(st.to_node) and (not self.nodeList[st.to_node].recursedForisRecursive):
-                    self.acceptStates.add(nd.ind)
-                    self.nodeList[st.to_node].recursedForisRecursive = True
-                    self.antiRecursionForRecusive()
-                elif self.nodeList[nd.ind].isSubStarter and self.nodeList[st.to_node].isRecursive2 and self.acceptStates.__contains__(st.to_node) and (not self.nodeList[st.to_node].recursedForisRecursive):
-                    self.acceptStates.add(nd.ind)
-                    self.nodeList[st.to_node].recursedForisRecursive = True
-                    self.nodeList[st.to_node].recursedForisRecursiveBySubStarter = True
-                    self.antiRecursionForRecusive()
-                elif self.nodeList[nd.ind].isSubStarter and self.nodeList[nd.ind].isSubStarter.recursedForisRecursiveBySubStarter:
-                    k = 2
+
+
 
 
 
@@ -275,21 +266,17 @@ class Nfa:
         nd: Node
         for nd in self.nodeList:
             for st in nd.steps:
-                if  (not self.nodeList[nd.ind].isSubStarter)  and (not self.nodeList[nd.ind].recursed)  and self.nodeList[st.to_node].isSubStarter and (self.nodeList[st.to_node].emptyNfa or self.nodeList[st.to_node].isRecursive2 )  and self.acceptStates.__contains__(st.to_node):
+                if  (not self.nodeList[nd.ind].recursed)  and self.nodeList[st.to_node].isSubStarter and self.nodeList[st.to_node].emptyNfa and self.acceptStates.__contains__(st.to_node):
                     self.acceptStates.add(nd.ind)
                     self.nodeList[nd.ind].recursed = True
                     self.antiRecursion()
-                elif (not self.nodeList[nd.ind].isSubStarter) and (not self.nodeList[nd.ind].recursed) and self.nodeList[st.to_node].recursed:
-                    self.acceptStates.add(nd.ind)
-                    self.nodeList[nd.ind].recursed = True
-                elif  (not self.nodeList[nd.ind].recursed)  and self.nodeList[st.to_node].isSubStarter and self.nodeList[st.to_node].emptyNfa and self.acceptStates.__contains__(st.to_node):
+                if (not self.nodeList[nd.ind].recursed) and self.nodeList[st.to_node].isSubStarter and self.acceptStates.__contains__(st.to_node):
                     self.acceptStates.add(nd.ind)
                     self.nodeList[nd.ind].recursed = True
                     self.antiRecursion()
-                elif  (not self.nodeList[nd.ind].recursed)  and self.nodeList[st.to_node].recursed:
-                    self.acceptStates.add(nd.ind)
-                    self.nodeList[nd.ind].recursed = True
-                    self.antiRecursion()
+
+
+
 
 
     def updateSubRecursion(self,index,starterInd):
