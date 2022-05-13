@@ -20,36 +20,38 @@ class Step:
 class Node:
     ind: int
     accept = False
-    steps = []
+    steps = set()
     char: str
     isRecursive = False
+    isRecursive2 = False
     isSubStarter = False
-    isSubRecrusive = False
+    isSubRecursive = False
     accept = False
     nfa = None
     emptyNfa = False
     recursed = False
     recursedForisRecursive = False
+    finisher = -1
 
     def __init__(self, ind, accept, steps):
         self.ind = ind
         self.accept = accept
         self.steps = steps
-        self.steps = []
+        self.steps = set()
 
     def __init__(self, ind, accept, char):
         self.ind = ind
         self.accept = accept
         self.char = char
-        self.steps = []
+        self.steps = set()
 
 
     def addStep(self, char, to_node):
-        self.steps.append(Step(char=char, to_node=to_node))
+        self.steps.add(Step(char=char, to_node=to_node))
 
     def addRecursion(self):
         self.isRecursive = True
-        self.steps.append(Step(char=self.char, to_node=self.ind))
+        self.steps.add(Step(char=self.char, to_node=self.ind))
 
 class Nfa:
     curInd: int = 0
@@ -83,7 +85,10 @@ class Nfa:
                 if curChar == "." or curChar == "|":
                     self.lastOperation = curChar
                 elif curChar == "*":
-                    k = 2
+                    nextChar = ""
+                    if i + 1 != len(self.regex):
+                        nextChar = self.regex[i + 1]
+
                 elif curChar == ")":
                     self.openedCures -= 1
                     self.joinBranches()
@@ -98,9 +103,10 @@ class Nfa:
                     self.finisherSize = len(self.nodeList)
                     self.nodeList[self.starterInd].nfa = self
                     if nextChar == "*":
-                        self.nodeList[self.starterInd].isSubRecrusive = True
-                        self.isSubRecrusive = True
+                        self.nodeList[self.starterInd].isSubRecursive = True
+                        self.nodeList[self.starterInd].finisher = self.finisherSize-1
                         self.addSubRecursionNfa()
+                        self.nodeList[self.finisherSize-1].isRecursive2 = True
                     return
                 elif curChar == "(":
                     self.openedCures += 1
@@ -173,28 +179,60 @@ class Nfa:
             for ste in self.nodeList[self.starterInd].steps:
                 self.nodeList[st].addStep(self.nodeList[ste.to_node].char,ste.to_node)
 
+    def getAllChildSteps(self, ind):
+        nd: Node = self.nodeList[ind]
+        steps = set()
+        changed = False
+        for st in nd.steps:
+            if self.nodeList[st.to_node].isRecursive and nd.ind != st.to_node:
+                childs, ch = self.getAllChildSteps(st.to_node)
+                if not childs.issubset(steps):
+                    changed = True
+                    steps.update(childs)
+            elif self.nodeList[st.to_node].isSubStarter and nd.ind != st.to_node:
+                if self.nodeList[st.to_node].isSubRecursive:
+                    self.updateSubRecursion(st.to_node,nd.ind)
+                    childs, ch = self.getAllChildSteps(self.nodeList[st.to_node].finisher)
+                    changed = True
+                    steps.update(childs)
+                childs, ch = self.getAllChildSteps(st.to_node)
+                if not childs.issubset(steps):
+                    changed = True
+                    steps.update(childs)
+            else:
+                if not steps.__contains__(st):
+                    changed = True
+                    steps.add(st)
+
+        return steps, changed
+
+
 
     def printNfaFull(self):
         acc = ""
         nd: Node
         pr = ""
         stepCounter  = 0
+      #  self.putInSteps()
         for nd in self.nodeList:
             steps = set()
 
             for st in nd.steps:
                 if self.nodeList[st.to_node].isRecursive:
-                    childs = self.getAllChildSteps(st.to_node)
+                    childs,ch = self.getAllChildSteps(st.to_node)
                     steps.update(childs)
                 elif self.nodeList[st.to_node].isSubStarter:
-                    if self.nodeList[st.to_node].isSubRecrusive or self.nodeList[st.to_node].emptyNfa:
+                    if self.nodeList[st.to_node].isSubRecursive or self.nodeList[st.to_node].emptyNfa:
                         self.updateSubRecursion(st.to_node,nd.ind)
-                    childs = self.getAllChildSteps(st.to_node)
+                        childs, ch = self.getAllChildSteps(self.nodeList[st.to_node].finisher)
+                        steps.update(childs)
+                    childs,ch = self.getAllChildSteps(st.to_node)
                     steps.update(childs)
                 else:
                     steps.add(st)
 
-            pr += len(steps).__str__()
+            #pr += len(steps).__str__()
+            pr += nd.ind.__str__()
             stepCounter += len(steps)
             for st in steps:
                 pr = pr + " " + st.char.__str__() + " " + st.to_node.__str__()
@@ -217,13 +255,30 @@ class Nfa:
                     self.acceptStates.add(nd.ind)
                     self.nodeList[st.to_node].recursedForisRecursive = True
                     self.antiRecursionForRecusive()
+                elif self.nodeList[st.to_node].isRecursive2 and self.acceptStates.__contains__(st.to_node) and (not self.nodeList[st.to_node].recursedForisRecursive):
+                    self.acceptStates.add(nd.ind)
+                    self.nodeList[st.to_node].recursedForisRecursive = True
+                    self.antiRecursionForRecusive()
+                elif self.nodeList[nd.ind].isSubStarter and self.nodeList[st.to_node].isRecursive2 and self.acceptStates.__contains__(st.to_node) and (not self.nodeList[st.to_node].recursedForisRecursive):
+                    self.acceptStates.add(nd.ind)
+                    self.nodeList[st.to_node].recursedForisRecursive = True
+                    self.nodeList[st.to_node].recursedForisRecursiveBySubStarter = True
+                    self.antiRecursionForRecusive()
+                elif self.nodeList[nd.ind].isSubStarter and self.nodeList[nd.ind].isSubStarter.recursedForisRecursiveBySubStarter:
+                    k = 2
+
+
+
+
+
     def antiRecursion(self):
         nd: Node
         for nd in self.nodeList:
             for st in nd.steps:
-                if  (not self.nodeList[nd.ind].isSubStarter)  and (not self.nodeList[nd.ind].recursed)  and self.nodeList[st.to_node].isSubStarter and self.nodeList[st.to_node].emptyNfa and self.acceptStates.__contains__(st.to_node):
+                if  (not self.nodeList[nd.ind].isSubStarter)  and (not self.nodeList[nd.ind].recursed)  and self.nodeList[st.to_node].isSubStarter and (self.nodeList[st.to_node].emptyNfa or self.nodeList[st.to_node].isRecursive2 )  and self.acceptStates.__contains__(st.to_node):
                     self.acceptStates.add(nd.ind)
                     self.nodeList[nd.ind].recursed = True
+                    self.antiRecursion()
                 elif (not self.nodeList[nd.ind].isSubStarter) and (not self.nodeList[nd.ind].recursed) and self.nodeList[st.to_node].recursed:
                     self.acceptStates.add(nd.ind)
                     self.nodeList[nd.ind].recursed = True
@@ -242,23 +297,7 @@ class Nfa:
             self.acceptStates.add(starterInd)
         else:
             for accepters in self.nodeList[index].nfa.acceptStates:
-                self.nodeList[index].steps.extend(self.nodeList[accepters].steps)
-
-
-    def getAllChildSteps(self,ind):
-        nd:Node = self.nodeList[ind]
-        steps = set()
-        for st in nd.steps:
-            if self.nodeList[st.to_node].isRecursive and nd.ind != st.to_node:
-                childs = self.getAllChildSteps(st.to_node)
-                steps.update(childs)
-            elif self.nodeList[st.to_node].isSubStarter:
-                childs = self.getAllChildSteps(st.to_node)
-                steps.update(childs)
-            else:
-                steps.add(st)
-        return steps
-
+                self.nodeList[index].steps.update(self.nodeList[accepters].steps)
 
 
 
