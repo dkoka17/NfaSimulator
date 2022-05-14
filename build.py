@@ -192,9 +192,9 @@ class Nfa:
             elif self.nodeList[st.to_node].isSubStarter and nd.ind != st.to_node:
                 if self.nodeList[st.to_node].isSubRecursive:
                     self.updateSubRecursion(st.to_node,nd.ind)
-                    childs, ch = self.getAllChildSteps(self.nodeList[st.to_node].finisher)
-                    changed = True
-                    steps.update(childs)
+                    #childs, ch = self.getAllChildSteps(self.nodeList[st.to_node].finisher)
+                    #changed = True
+                    #steps.update(childs)
                 childs, ch = self.getAllChildSteps(st.to_node)
                 if not childs.issubset(steps):
                     changed = True
@@ -224,15 +224,15 @@ class Nfa:
                 elif self.nodeList[st.to_node].isSubStarter:
                     if self.nodeList[st.to_node].isSubRecursive or self.nodeList[st.to_node].emptyNfa:
                         self.updateSubRecursion(st.to_node,nd.ind)
-                        childs, ch = self.getAllChildSteps(self.nodeList[st.to_node].finisher)
-                        steps.update(childs)
+                        #childs, ch = self.getAllChildSteps(self.nodeList[st.to_node].finisher)
+                        #steps.update(childs)
                     childs,ch = self.getAllChildSteps(st.to_node)
                     steps.update(childs)
                 else:
                     steps.add(st)
 
-            #pr += len(steps).__str__()
-            pr += nd.ind.__str__()
+            pr += len(steps).__str__()
+            #pr += nd.ind.__str__()
             stepCounter += len(steps)
             for st in steps:
                 pr = pr + " " + st.char.__str__() + " " + st.to_node.__str__()
