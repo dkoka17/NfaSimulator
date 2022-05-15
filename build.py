@@ -289,6 +289,26 @@ class Nfa:
 
 
 def addPlus(regex):
+
+    con = ""
+    opened = False
+    for i, v in enumerate(regex):
+        if regex[i] == "|" or regex[i] == "*" or regex[i] == "(" or regex[i] == ")":
+            if opened:
+                opened = False
+                con = con + ")" + v
+            else:
+                con += v
+        else:
+            if opened:
+                con = con + v
+            else:
+                opened = True
+                con = con + "(" + v
+    if opened:
+        con += ")"
+    regex = con
+
     ret = ""
     for i, v in enumerate(regex):
         if regex[i] == "|" or regex[i] == "(":
